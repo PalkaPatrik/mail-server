@@ -1,0 +1,11 @@
+# start application on port 25, exposing port 25
+# and mount the data directory
+version: '3.3'
+services:
+  mail-server:
+    container_name: mail-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3030:3030"
