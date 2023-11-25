@@ -3,11 +3,11 @@ const mailparser = require('mailparser');
 const mysql = require('mysql2');
 
 const db = mysql.createConnection({
-    host: '127.0.0.1',
-    port: 3306,
-    user: 'logger',
-    password: 'cactus',
-    database: 'smtp_server_log',
+    host: process.env.MYSQL_HOST,
+    port: process.env.MYSQL_PORT,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DATABASE,
 })
 
 const server = new smtp.SMTPServer({
@@ -17,7 +17,6 @@ const server = new smtp.SMTPServer({
             console.log('New message parsed: ');
             console.log(`To: ${parsed.to.text}`);
             console.log(`Subject: ${parsed.subject}`);
-            console.log('--------------------------')
 
             const fs = require('fs');
             const path = require('path');
@@ -30,35 +29,46 @@ const server = new smtp.SMTPServer({
             const textData = `From: ${parsed.from.text}\nTo: ${parsed.to.text}\nSubject: ${parsed.subject}\nText body: ${parsed.text}`;
             const htmlData = parsed.html;
 
-            db.connect((err) => {
-                if (err) {
-                    console.log(err);
-                } else {
-                    db.query(`INSERT INTO email_log (\`from\`, \`to\`, subject, text_body, file_name) VALUES ('${parsed.from.text}', '${parsed.to.text}', '${parsed.subject}', '${parsed.text}', '${htmlFile}')`, (err) => {
-                        if (err) {
-                            console.log(err);
-                        } else {
-                            console.log('Email logged to database');
-                        }
-                    });
-                }
-            })
-
-
-            if (!fs.existsSync(path.join(__dirname, 'emails'))) {
-                fs.mkdirSync(path.join(__dirname, 'emails'));
+            try {
+                db.connect((err) => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        db.query(`INSERT INTO email_log (\`from\`, \`to\`, subject, text_body, file_name) VALUES ('${parsed.from.text}', '${parsed.to.text}', '${parsed.subject}', '${parsed.text}', '${htmlFile}')`, (err) => {
+                            if (err) {
+                                console.log(err);
+                            } else {
+                                console.log('Email logged to database');
+                            }
+                        });
+                    }
+                })
+            } catch (err) {
+                console.error('Unable to connect to the database')
+                console.error(err);
             }
 
-            fs.writeFile(textFilePath, textData, (err) => {
-                if (err) {
-                    console.log(err);
+            try {
+                if (!fs.existsSync(path.join(__dirname, 'emails'))) {
+                    fs.mkdirSync(path.join(__dirname, 'emails'));
                 }
-            })
-            fs.writeFile(htmlFilePath, htmlData, (err) => {
-                if (err) {
-                    console.log(err);
-                }
-            })
+
+                fs.writeFile(textFilePath, textData, (err) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                })
+                fs.writeFile(htmlFilePath, htmlData, (err) => {
+                    if (err) {
+                        console.log(err);
+                    }
+                })
+            } catch (err) {
+                console.error('Unable to write to file');
+                console.error(err);
+            }
+
+            console.log('--------------------------')
             callback();
         });
     },

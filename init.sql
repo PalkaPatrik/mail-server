@@ -8,5 +8,5 @@ CREATE TABLE IF NOT EXISTS `email_log` (
     PRIMARY KEY (`id`)
 );
 
-create user 'logger'@'localhost' identified by password 'cactus';
+--create user 'logger'@'localhost' identified by password 'cactus';
 grant all privileges on smtp_server_log.email_log to 'logger'@'localhost';

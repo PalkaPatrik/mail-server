@@ -2,10 +2,26 @@
 # and mount the data directory
 version: '3.3'
 services:
+  mysql-db:
+    image: mysql:latest
+    container_name: mysql-db
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: toor
+      MYSQL_DATABASE: smtp_server_log
+      MYSQL_USER: logger
+      MYSQL_PASSWORD: cactus
+    volumes:
+      - /host_mnt/Users/patrick/projects/node/mail-server/init.sql:/docker-entrypoint-initdb.d/init.sql:rw
   mail-server:
     container_name: mail-server
+    env_file:
+      - ./environment/docker.env
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "3030:3030"
+    depends_on:
+      - mysql-db
